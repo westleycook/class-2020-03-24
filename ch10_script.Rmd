@@ -15,43 +15,124 @@ library(tidyverse)
 
 **Prompt:** Explore train data from the **gov.1005.data** with your partner and try to figure out what it means. Recall the syllabus assignment: "Causal effect of intergroup contact on exclusionary attitudes" by Ryan Enos. PNAS March 11, 2014 111 (10) 3699-3704. [link](https://www.pnas.org/content/pnas/111/10/3699.full.pdf%20). You read it, right? Read the abstract at least! Can you find any "interesting" observations? Make a plot! Which variables are worth looking at? It may be necessary to help students with the key variables. `treatment` has two levels, `Treated` and `Control`. The Treated have two Spanish-speakers have a conversation on their commuter train platform. The Control do not. Both before and after the treatment, everyone answers three questions about immigration. The answer for each question is codes from 1 (strongly disagree) through 5 (strongly agree). So, the most "conservative" starting attitude (`att_start`) before the treatment would be 15.
 
+```{r}
+
+summary(train)
+
+```
+
+
 # Scene 2
 
 **Prompt:** What is the average income of the commuters? How sure can we be of that number? If we were to survey another 115 commuters, what would their average income be? How does this connect to the difference between the harpoon and the net in the book? Don't know? Look it up!
+
+```{r}
+
+train
+
+```
+
 
 # Scene 3
 
 **Prompt:** Create a bootstrap sample of a 1,000 replications of the mean income of the commuters, where each replication draws the appropriate number, with replacement, from the original data.
 
+```{r bootstrap, echo=FALSE}
+
+bootstrap <- rep_sample_n(train, size = 115, reps = 1000, replace = TRUE) %>% 
+  group_by(replicate) %>% 
+  summarize(mean_income = mean(income))
+
+```
+
+
 # Scene 4
 
 **Prompt:** Using the bootstrap sample you create, calculate the 50% confidence interval (using the percentile method) of the true mean income of commuters. What is the meaning of this interval? What does it tell us about the world that we did not know before? Is that the same thing as thinking that there is a 50% chance that, if we were to draw a new commuter at random, that her income would fall within that range? Why or why not? What if, instead of looking at all commuters in the sample, we just looked at the Treated. That is easy to do with a single `filter()`. But would the interpretation of the confidence interval be the same or different?
+
+```{r ci, echo=FALSE}
+
+bootstrap %>% 
+  pull(mean_income) %>% 
+  quantile(c(.25, .75))
+
+```
+
 
 
 # Scene 5
 
 **Prompt:**  Calculate  the difference between the income of treated and control commuters in our sample. We need to subtract the Control average from the Treated average. To do that, having them on the same row is convenient. Recall the `pivot_*` functions. `everything()` is also a cool trick for organizing the order of the variables in a tibble. I like to put the key variable, which would be the income difference in this case, first.
 
+```{r income-dif, echo=FALSE}
+
+train %>% 
+  group_by(treatment) %>% 
+  summarize(mean_income = mean(income)) %>% 
+  pivot_wider(names_from = treatment, values_from = mean_income) %>% 
+  summarize(diff_income = Control - Treated)
+
+```
+
+
 # Scene 7
 
 **Prompt:**  Calculate a 95% confidence interval for the difference between the mean income of treated and control commuters in our sample. Provide a Bayesian and Frequentist interpretation of this interval.
+
+```{r ci_95, echo=FALSE}
+
+rep_sample_n(train, size = 115, reps = 1000, replace = TRUE) %>% 
+  group_by(replicate, treatment) %>% 
+  summarise(mean_income = mean(income)) %>% 
+  pivot_wider(names_from = treatment, values_from = mean_income) %>% 
+  summarise(income_diff = Control - Treated) %>% 
+  pull(income_diff) %>% 
+  quantile(c(.025, .975))
+
+```
+
 
 
 # Scene 8
 
 **Prompt:**  What about the difference between att_chg of the treated and the controls? Calculate the mean difference, just as we did with income. Is this difference "large?" 
 
+```{r att_chg-diff, echo=FALSE}
+
+train %>% 
+  group_by(treatment) %>% 
+  summarise(mean_att_chg = mean(att_chg)) %>% 
+  pivot_wider(names_from = treatment, values_from = mean_att_chg) %>% 
+  summarize(diff = Control - Treated)
+
+```
 
 
 # Scene 9
 
 **Prompt:** What is the 99% confidence interval for that difference? 
 
+```{r ci_99, echo=FALSE}
+
+rep_sample_n(train, size = 115, reps = 1000, replace = TRUE) %>% 
+  group_by(replicate, treatment) %>% 
+  summarise(mean_att_chg = mean(att_chg)) %>% 
+  pivot_wider(names_from = treatment, values_from = mean_att_chg) %>% 
+  summarise(att_chg_diff = Control - Treated) %>% 
+  pull(att_chg_diff) %>% 
+  quantile(c(.005, .995))
+
+```
+
 
 
 # Scene 10
 
 **Prompt:** Use `lm()` to calculate the difference between att_chg of the treated and the controls? 
+
+```{r }
+
+```
 
 
 # Scene 11
